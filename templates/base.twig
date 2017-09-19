@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}{% endblock %} | GDPR readiness</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/jquery/jquery-ui.min.css">
+    <style type="text/css">
+        .orange { color: #e59500; }
+        .orange-bg { background: #e59500; }
+        .footer { margin-top: 350px; border-top: 1px solid black; }
+    </style>
+  </head>
+  <body>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="/"><span class="orange">Plugin</span> Check</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                  <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                  <a class="nav-link" href="/info">More information</a>
+              </li>
+          </ul>
+          <ul class="navbar-nav mr-right">
+              {% if (identity) %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="/admin">Manage plugins</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/logout">Logout</a>
+                  </li>
+              {% else %}
+                  <li class="nav-item">
+                      <a class="nav-link" href="/login">Login</a>
+                  </li>
+              {% endif %}
+          </ul>
+      </div>
+
+  </nav>
+
+      <div class="jumbotron">
+          <div class="container">
+              <h1 class="h1">{{ block('title')|e }}</h1>
+              <p>{% block subtitle %}We now offer you a quick and easy way to verify that your plugin is GDPR compliant.{% endblock %}</p>
+          </div>
+      </div>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <div class="container footer">
+        <div class="row">
+            <div class="col-sm-4">
+                <p>Copyright <?php echo date('Y') ?> &copy; <a href="https://www.in2it.be" title="In2it, professional PHP services" rel="nofollow" target="_blank">In2it</a>. All rights reserved.</p>
+            </div>
+            <div class="col-sm-4">&nbsp;</div>
+            <div class="col-sm-4">
+                <p>GDPR - General Data Protection Regulation</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script type="application/javascript" src="/jquery/jquery.min.js"></script>
+    <script type="application/javascript" src="/jquery/jquery-ui.min.js"></script>
+    <script type="application/javascript" src="/popper/dist/umd/popper.min.js"></script>
+    <script type="application/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
+    {% block customJs %}{% endblock %}
+  </body>
+</html>

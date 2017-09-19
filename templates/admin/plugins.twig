@@ -1,0 +1,46 @@
+{% extends 'base.twig' %}
+
+{% block title %}Administer plugins{% endblock %}
+{% block subtitle %}Easy updating plugins through the web interface{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+
+        <table class="table">
+            <tr>
+                <th>ID</th>
+                <th>Platform</th>
+                <th>Plugin</th>
+                <th>Price</th>
+                <th>Website</th>
+                <th>Compliant</th>
+                <th>Checked</th>
+                <th><a href="/admin/add">Add</a></th>
+            </tr>
+
+            {% for plugin in plugins %}
+                <tr {% if 0 < last_id and plugin.plugin_id == last_id %}class="bg-light"{% endif %}>
+                    <td>{% if 0 < last_id and plugin.plugin_id == last_id %}<a name="last"></a>{% endif %}{{ plugin.plugin_id }}</td>
+                    <td>{{ plugin.platform }}</td>
+                    <td>{% if plugin.name|length > 25 %}
+                            <span title="{{ plugin.name|escape }}">{{ "%25.25s"|format(plugin.name) }}</span>...
+                        {% else %}
+                        {{ plugin.name }}
+                        {% endif %}
+                    </td>
+                    <td class="align-right">{{ plugin.price|number_format(2, '.', ',') }}</td>
+                    <td>{% if '' != plugin.website %}<a href="{{ plugin.website }}" target="_blank">View website</a>{% else %}<a href="{{ plugin.search ~ plugin.name|url_encode }}" target="_blank">Search</a>{% endif %}</td>
+                    <td>{% if 1 == plugin.compliant %}Yes{% else %}No{% endif %}</td>
+                    <td>{{ plugin.last_checked|date("d-m-Y") }}<br>{{ plugin.last_checked|date("H:i:s") }}</td>
+                    <td>
+                        <a href="/admin/edit/{{ plugin.platform_id }}/{{ plugin.plugin_id }}">Edit</a> |
+                        <a href="/admin/delete/{{ plugin.platform_id }}/{{ plugin.plugin_id }}">Delete</a>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </table>
+
+    </div>
+{% endblock %}

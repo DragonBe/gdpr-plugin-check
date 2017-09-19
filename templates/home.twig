@@ -1,0 +1,45 @@
+{% extends 'base.twig' %}
+
+{% block title %}Are your plugins GDPR ready?{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-sm-3"> </div>
+        <div class="col-sm-6">
+
+            <form class="form" action="/plugin/check" method="post">
+
+                <div class="form-group">
+                    <label for="select-platform">Your platform:</label>
+                    <select name="platform" id="select-platform" class="form-control">
+                        {% for platform in platforms %}
+                            <option value="{{ platform.id }}">{{ platform.platform }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="text-plugin">Find your plugin:</label>
+                    <input type="text" name="plugin" id="text-plugin" class="form-control" value="">
+                </div>
+                <input type="submit" class="btn btn-success" value="Check">
+                <a href="/" title="Reset form" class="btn btn-default">Reset form</a>
+
+            </form>
+
+        </div>
+        <div class="col-sm-3"> </div>
+    </div>
+
+{% endblock %}
+
+{% block customJs %}
+    <script type="application/javascript">
+        $(document).ready(function () {
+           $('#text-plugin').autocomplete({
+               minLength: 3,
+               source: "/plugin"
+           });
+        });
+    </script>
+{% endblock %}

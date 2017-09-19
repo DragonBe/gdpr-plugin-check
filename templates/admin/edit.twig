@@ -1,0 +1,72 @@
+{% extends 'base.twig' %}
+
+{% block title %}Administer plugins{% endblock %}
+{% block subtitle %}Easy updating plugins through the web interface{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+
+        <div class="col-md-3">&nbsp;</div>
+        <div class="col-md-6">
+
+            <form class="form" action="/admin/{{ action }}" method="post">
+
+                <div class="form-group">
+                    <label for="update-platform">Platform</label>
+                    <select name="platform" id="update-platform" class="form-control" {% if 'edit' == action %}readonly="readonly"{% endif %}>
+                        {% for platform in platforms %}
+                            {% if data.platform_id == platform.id %}
+                                <option value="{{ platform.id }}" selected="selected">{{ platform.platform }}</option>
+                            {% else %}
+                                <option value="{{ platform.id }}">{{ platform.platform }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="update-plugin">Plugin</label>
+                    <input type="text" name="plugin" id="update-plugin" class="form-control" {% if 'edit' == action %}readonly="readonly"{% endif %} value="{{ data.name }}">
+                    {% if 'edit' == action %}<input type="hidden" name="plugin" value="{{ data.plugin_id }}">{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="update-website">Website</label>
+                    <input type="text" name="website" id="update-website" class="form-control" value="{{ data.website }}">
+                    {% if '' != data.website %}
+                        <a href="{{ data.website }}" target="_blank">Visit website</a>
+                    {% else %}
+                        <a href="{{ data.search ~ data.name|url_encode }}" target="_blank">Lookup</a>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="update-price">Price</label>
+                    <input type="text" name="price" id="update-price" class="form-control" value="{{ data.price }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="update-compliance">Compliant</label>
+                    <select name="compliant" id="update-compliance" class="form-control">
+                        {% for key, value in compliance %}
+                            {% if data.compliant == key %}
+                                <option value="{{ key }}" selected="selected">{{ value }}</option>
+                            {% else %}
+                                <option value="{{ key }}">{{ value }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <input type="submit" class="btn btn-success" value="{{ action|capitalize }}"> <a href="/admin" class="btn btn-default">Cancel</a>
+
+
+            </form>
+
+        </div>
+        <div class="col-md-3">&nbsp;</div>
+
+    </div>
+
+{% endblock %}
