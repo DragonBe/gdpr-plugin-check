@@ -1,0 +1,46 @@
+{% extends 'base.twig' %}
+
+{% block title %}Please login{% endblock %}
+{% block subtitle %}We require you to authenticate yourself.{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-md-3"> </div>
+        <div class="col-md-6">
+
+            {% if '' != error %}
+                <div class="alert alert-danger alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form class="form" action="/login" method="post">
+                <div class="form-group">
+                    <label for="login-username">Username:</label>
+                    <input type="text" name="username" id="login-username" class="form-control" value="">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" name="password" id="login-password" class="form-control" value="">
+                </div>
+                <input type="hidden" name="anti-spam" value="{{ csrf }}">
+                <input type="hidden" name="ref" value="{{ ref }}">
+                <input type="submit" class="btn btn-success" value="Login">
+            </form>
+        </div>
+        <div class="col-md-3"> </div>
+    </div>
+
+{% endblock %}
+
+{% block customJs %}
+<script type="application/javascript">
+    $(document).ready(function () {
+        $("#login-username").focus();
+    });
+</script>
+{% endblock %}

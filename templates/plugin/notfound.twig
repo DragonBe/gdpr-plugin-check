@@ -1,0 +1,20 @@
+{% extends 'base.twig' %}
+
+{% block title %}{{ plugin|escape|capitalize }} was not found!{% endblock %}
+{% block subtitle %}Looks you have discovered a new plugin.{% endblock %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-sm-3"> </div>
+        <div class="col-sm-6">
+
+            <p>We don't have any records for "{{ plugin|escape|capitalize }}".</p>
+
+            <a href="/" class="bnt btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Go back</a>
+        </div>
+        <div class="col-sm-3"> </div>
+    </div>
+
+{% endblock %}
+
