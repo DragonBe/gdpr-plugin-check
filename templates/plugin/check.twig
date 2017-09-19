@@ -11,6 +11,7 @@
 
             <h2 class="h2">Plugin status</h2>
             <dl class="list-group">
+                <dd class="list-group-item">{{ plugin.platform }}</dd>
                 <dd class="list-group-item">{{ plugin.name }}</dd>
                 <dd class="list-group-item">{% if '' != plugin.website %}<a href="{{ plugin.website }}" target="_blank">view website</a>{% endif %}</dd>
                 <dd class="list-group-item">{{ plugin.price|number_format(2, '.', ',') }}</dd>

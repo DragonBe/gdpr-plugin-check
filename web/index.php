@@ -49,22 +49,28 @@ $app->get('/info', function () use ($app) {
 });
 
 $app->get('/plugin', function (Request $request) use ($app) {
-    
-    $pluginStmt = $app['pdo']->prepare('SELECT id, name FROM plugin WHERE name like ? ORDER BY name');
-    $pluginStmt->execute(['%' . $request->get('term') . '%']);
+
+    $term = $request->get('term', '');
+    $platform = (int) $request->get('platform', 1);
+
+    $pluginStmt = $app['pdo']->prepare('SELECT pa.platform, p.id, p.name FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id WHERE p.name like ? ORDER BY pa.platform, p.name');
+    $pluginStmt->execute(['%' . $term . '%']);
     $pluginData = $pluginStmt->fetchAll(\PDO::FETCH_ASSOC);
     $fieldData = [];
     foreach ($pluginData as $pluginEntry) {
-        $fieldData[$pluginEntry['id']] = $pluginEntry['name'];
+        $fieldData[$pluginEntry['id']] = $pluginEntry['name'] . ' (' . $pluginEntry['platform'] . ')';
     }
     return json_encode($fieldData);
 });
 
 $app->post('/plugin/check', function (Request $request) use ($app) {
-    $plugin = $request->get('plugin');
+    $pluginString = $request->get('plugin');
+    preg_match('/^(.*)\s\((\w+)\)$/', $pluginString, $matches);
+    $plugin = $matches[1];
+    $platform = $matches[2];
 
-    $stmt = $app['pdo']->prepare('SELECT p.name, pd.website, pp.price, pd.compliant, pd.last_checked FROM platform_plugin pp JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd on pp.plugin_id = pd.plugin_id WHERE p.name = ?');
-    $stmt->execute([$plugin]);
+    $stmt = $app['pdo']->prepare('SELECT pa.platform, p.name, pd.website, pp.price, pd.compliant, pd.last_checked FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd on pp.plugin_id = pd.plugin_id WHERE (pa.platform = ?) AND (p.name = ?)');
+    $stmt->execute([$platform, $plugin]);
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
     if (false === $result) {
         return $app['twig']->render('plugin/notfound.twig', ['plugin' => $plugin]);
