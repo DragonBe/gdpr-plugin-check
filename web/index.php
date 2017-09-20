@@ -247,4 +247,50 @@ $app->get('/logout', function () use ($app) {
     return $app->redirect('/');
 });
 
+$app->get('/api', function () use ($app) {
+    return $app['twig']->render('api/home.twig', [
+        'baseUrl' => 'https://plugin-check.in2it.be/api',
+    ]);
+});
+
+$app->get('api/check/{plugin}', function ($plugin) use ($app) {
+    $pluginChk = $app['pdo']->prepare(
+        'SELECT pa.platform, p.name, pd.website, pd.compliant, pd.last_checked, pp.price 
+           FROM platform_plugin pp 
+           JOIN platform pa ON pp.platform_id = pa.id
+           JOIN plugin p ON pp.plugin_id = p.id
+           JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id
+           WHERE p.name LIKE ?
+           ORDER BY p.name
+    ');
+    $pluginChk->execute(['%' . $plugin . '%']);
+    $data = $pluginChk->fetchAll(\PDO::FETCH_ASSOC);
+    $totalResults = count($data);
+    $success = 'No results found';
+    if (0 < $totalResults) {
+        $success = 'Successful finding plugins';
+    }
+    return $app->json(['result' => $success, 'count' => $totalResults, 'plugins' => $data]);
+});
+
+$app->get('api/check/{plugin}/{platform}', function ($plugin, $platform) use ($app) {
+    $pluginChk = $app['pdo']->prepare(
+        'SELECT pa.platform, p.name, pd.website, pd.compliant, pd.last_checked, pp.price 
+           FROM platform_plugin pp 
+           JOIN platform pa ON pp.platform_id = pa.id
+           JOIN plugin p ON pp.plugin_id = p.id
+           JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id
+           WHERE (p.name LIKE ?) AND (pa.platform LIKE ?)
+           ORDER BY p.name
+    ');
+    $pluginChk->execute(['%' . $plugin . '%', '%' . $platform . '%']);
+    $data = $pluginChk->fetchAll(\PDO::FETCH_ASSOC);
+    $totalResults = count($data);
+    $success = 'No results found';
+    if (0 < $totalResults) {
+        $success = 'Successful finding plugins';
+    }
+    return $app->json(['result' => $success, 'count' => $totalResults, 'plugins' => $data]);
+});
+
 $app->run();
