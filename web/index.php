@@ -25,10 +25,15 @@ $app->register(new TwigServiceProvider(), array(
 
 $app->extend('twig', function ($twig, $app) {
     $identity = false;
+    $tracking = true;
     if ([] !== $_SESSION && array_key_exists('username', $_SESSION)) {
         $identity = true;
     }
+    if (1 === (int) $_SERVER['HTTP_DNT']) {
+        $tracking = false;
+    }
     $twig->addGlobal('identity', $identity);
+    $twig->addGlobal('tracking', $tracking);
     return $twig;
 });
 
@@ -46,6 +51,14 @@ $app->get('/', function () use ($app) {
 $app->get('/info', function () use ($app) {
 
     return $app['twig']->render('info.twig', []);
+});
+
+$app->get('/privacy-declaration', function () use ($app) {
+    return $app['twig']->render('privacy.twig');
+});
+
+$app->get('/terms-conditions', function () use ($app) {
+    return $app['twig']->render('terms.twig');
 });
 
 $app->get('/plugin', function (Request $request) use ($app) {
@@ -255,7 +268,7 @@ $app->get('/api', function () use ($app) {
 
 $app->get('api/check/{plugin}', function ($plugin) use ($app) {
     $pluginChk = $app['pdo']->prepare(
-        'SELECT pa.platform, p.name, pd.website, pd.compliant, pd.last_checked, pp.price 
+        'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END), pd.last_checked, pp.price 
            FROM platform_plugin pp 
            JOIN platform pa ON pp.platform_id = pa.id
            JOIN plugin p ON pp.plugin_id = p.id
@@ -275,7 +288,7 @@ $app->get('api/check/{plugin}', function ($plugin) use ($app) {
 
 $app->get('api/check/{plugin}/{platform}', function ($plugin, $platform) use ($app) {
     $pluginChk = $app['pdo']->prepare(
-        'SELECT pa.platform, p.name, pd.website, pd.compliant, pd.last_checked, pp.price 
+        'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END) AS compliant, pd.last_checked, pp.price 
            FROM platform_plugin pp 
            JOIN platform pa ON pp.platform_id = pa.id
            JOIN plugin p ON pp.plugin_id = p.id

@@ -66,12 +66,19 @@
     <div class="container footer">
         <div class="row">
             <div class="col-sm-4">
-                <p>Copyright <?php echo date('Y') ?> &copy; <a href="https://www.in2it.be" title="In2it, professional PHP services" rel="nofollow" target="_blank">In2it</a>. All rights reserved.</p>
+                <p>Copyright <?php echo date('Y') ?> &copy; <a href="https://www.in2it.be"
+               title="In2it, professional PHP services" rel="nofollow" target="_blank">In2it</a>.
+                All rights reserved.<br>
+                Created with <img src="/glyphicons/png/glyphicons-13-heart.png" width="16" height="16" alt="love"> in Europe.</p>
             </div>
             <div class="col-sm-4">&nbsp;</div>
-            <div class="col-sm-4">
-                <p>GDPR - General Data Protection Regulation<br>
-                <a href="/api" title="API documentation">API</a></p>
+            <div class="col-sm-4 text-right">
+                <p>
+                    <a href="/api" title="API documentation">API</a> |
+                    <a href="/privacy-declaration" title="Privacy Declaration">Privacy Declaration</a> |
+                    <a href="/terms-conditions" title="Terms &amp; Conditions">Terms &amp; Conditions</a><br>
+                    GDPR - General Data Protection Regulation
+                </p>
             </div>
         </div>
     </div>
@@ -83,6 +90,7 @@
     <script type="application/javascript" src="/popper/dist/umd/popper.min.js"></script>
     <script type="application/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
 
+  {% if tracking %}
   <!-- Global Site Tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=UA-352655-1"></script>
   <script>
@@ -103,6 +111,9 @@
       ga('send', 'pageview');
 
   </script>
+  {% else %}
+  <!-- Tracking disabled because of your preference setting in your browser -->
+  {% endif %}
 
   {% block customJs %}{% endblock %}
   </body>
