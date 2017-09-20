@@ -25,10 +25,15 @@ $app->register(new TwigServiceProvider(), array(
 
 $app->extend('twig', function ($twig, $app) {
     $identity = false;
+    $tracking = true;
     if ([] !== $_SESSION && array_key_exists('username', $_SESSION)) {
         $identity = true;
     }
+    if (1 === (int) $_SERVER['HTTP_DNT']) {
+        $tracking = false;
+    }
     $twig->addGlobal('identity', $identity);
+    $twig->addGlobal('tracking', $tracking);
     return $twig;
 });
 
@@ -46,6 +51,14 @@ $app->get('/', function () use ($app) {
 $app->get('/info', function () use ($app) {
 
     return $app['twig']->render('info.twig', []);
+});
+
+$app->get('/privacy-declaration', function () use ($app) {
+    return $app['twig']->render('privacy.twig');
+});
+
+$app->get('/terms-conditions', function () use ($app) {
+    return $app['twig']->render('terms.twig');
 });
 
 $app->get('/plugin', function (Request $request) use ($app) {
@@ -245,6 +258,52 @@ $app->get('/logout', function () use ($app) {
     unset ($_SESSION['username']);
     session_destroy();
     return $app->redirect('/');
+});
+
+$app->get('/api', function () use ($app) {
+    return $app['twig']->render('api/home.twig', [
+        'baseUrl' => 'https://plugin-check.in2it.be/api',
+    ]);
+});
+
+$app->get('api/check/{plugin}', function ($plugin) use ($app) {
+    $pluginChk = $app['pdo']->prepare(
+        'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END), pd.last_checked, pp.price 
+           FROM platform_plugin pp 
+           JOIN platform pa ON pp.platform_id = pa.id
+           JOIN plugin p ON pp.plugin_id = p.id
+           JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id
+           WHERE p.name LIKE ?
+           ORDER BY p.name
+    ');
+    $pluginChk->execute(['%' . $plugin . '%']);
+    $data = $pluginChk->fetchAll(\PDO::FETCH_ASSOC);
+    $totalResults = count($data);
+    $success = 'No results found';
+    if (0 < $totalResults) {
+        $success = 'Successful finding plugins';
+    }
+    return $app->json(['result' => $success, 'count' => $totalResults, 'plugins' => $data]);
+});
+
+$app->get('api/check/{plugin}/{platform}', function ($plugin, $platform) use ($app) {
+    $pluginChk = $app['pdo']->prepare(
+        'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END) AS compliant, pd.last_checked, pp.price 
+           FROM platform_plugin pp 
+           JOIN platform pa ON pp.platform_id = pa.id
+           JOIN plugin p ON pp.plugin_id = p.id
+           JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id
+           WHERE (p.name LIKE ?) AND (pa.platform LIKE ?)
+           ORDER BY p.name
+    ');
+    $pluginChk->execute(['%' . $plugin . '%', '%' . $platform . '%']);
+    $data = $pluginChk->fetchAll(\PDO::FETCH_ASSOC);
+    $totalResults = count($data);
+    $success = 'No results found';
+    if (0 < $totalResults) {
+        $success = 'Successful finding plugins';
+    }
+    return $app->json(['result' => $success, 'count' => $totalResults, 'plugins' => $data]);
 });
 
 $app->run();
