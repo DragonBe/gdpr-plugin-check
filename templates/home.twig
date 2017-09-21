@@ -2,6 +2,14 @@
 
 {% block title %}Are your plugins GDPR ready?{% endblock %}
 
+{% block customcss %}
+<style type="text/css">
+    .post-title h3 { text-transform: uppercase; font-weight: lighter; }
+    .post-body { font-weight: lighter; }
+    .post-footer { font-weight: lighter; font-style: italic; font-size: smaller; padding-top: 5px; border-top: 0.5px solid black}
+</style>
+{% endblock %}
+
 {% block content %}
 
     <div class="row">
@@ -21,6 +29,32 @@
 
         </div>
         <div class="col-sm-3"> </div>
+    </div>
+
+    <div class="row" style="margin-top: 55px;">
+
+        <div class="col-sm-3"> </div>
+        <div class="col-sm-6">
+
+            <h2>Latest updates</h2>
+            <hr>
+            {% for post in news %}
+
+                <div class="post-title" style="">
+                    <h3>{{ post.title|escape }}</h3>
+                </div>
+                <div class="post-body">
+                    <p>{{ post.article|escape|nl2br }}</p>
+                </div>
+                <div class="post-footer">
+                    <p>Published by {{ post.author|escape }} on {{ post.published|date('d/m/Y') }} at {{ post.published|date('H:i') }}</p>
+                </div>
+
+            {% endfor %}
+
+        </div>
+        <div class="col-sm-3"> </div>
+
     </div>
 
 {% endblock %}
