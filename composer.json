@@ -2,6 +2,7 @@
     "require": {
         "silex/silex": "^2.2",
         "twig/twig": "^2.4",
-        "guzzlehttp/guzzle": "^6.3"
+        "guzzlehttp/guzzle": "^6.3",
+        "phing/phing": "^2.16"
     }
 }
