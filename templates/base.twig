@@ -16,6 +16,7 @@
         .code { background: #ebebeb; padding: 15px; border: 1px solid darkgrey; max-height: 350px; overflow: auto;}
         .cli { background: #ebebeb; color: #cc0000; padding: 2px; border: 1px solid darkgrey;}
     </style>
+    {% block customcss %}{% endblock %}
   </head>
   <body>
 
@@ -38,6 +39,9 @@
               {% if (identity) %}
                   <li class="nav-item">
                     <a class="nav-link" href="/admin">Manage plugins</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/admin/news">Update news</a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link" href="/logout">Logout</a>

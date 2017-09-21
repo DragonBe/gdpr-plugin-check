@@ -43,9 +43,11 @@ $app['server_page'] = $_SERVER['PHP_SELF'];
 
 $app->get('/', function () use ($app) {
 
-    $platformStmt = $app['pdo']->query('SELECT * FROM platform ORDER BY platform');
-    $platformData = $platformStmt->fetchAll(\PDO::FETCH_ASSOC);
-    return $app['twig']->render('home.twig', ['platforms' => $platformData]);
+    $newsStmt = $app['pdo']->query('SELECT n.title, n.article, n.published, m.username AS author FROM news n JOIN manager m ON n.manager_id = m.id ORDER BY n.published DESC LIMIT 3');
+    $news = $newsStmt->fetchAll(\PDO::FETCH_ASSOC);
+    return $app['twig']->render('home.twig', [
+        'news' => $news,
+    ]);
 });
 
 $app->get('/info', function () use ($app) {
@@ -204,6 +206,66 @@ $app->post('/admin/edit', function (Request $request) use ($app) {
     $plugPriceStmt = $app['pdo']->prepare('UPDATE platform_plugin SET price = ? WHERE (platform_id = ?) AND (plugin_id = ?)');
     $plugPriceStmt->execute([$price, $platformId, $pluginId]);
     return $app->redirect('/admin?last_id=' . $pluginId . '#last');
+});
+
+$app->get('/admin/news', function () use ($app) {
+    if ([] === $_SESSION || !array_key_exists('username', $_SESSION)) {
+        return $app->redirect('/login?ref=' . urlencode('/admin/news'));
+    }
+    $post = [
+        'id' => 0,
+        'author' => $_SESSION['username'],
+        'title' => '',
+        'article' => '',
+    ];
+    return $app['twig']->render('admin/news.twig', ['news' => $post]);
+});
+
+$app->post('/admin/news', function (Request $request) use ($app) {
+    if ([] === $_SESSION || !array_key_exists('username', $_SESSION)) {
+        return $app->redirect('/login?ref=' . urlencode('/admin/news'));
+    }
+
+    $data = [
+        'id' => (int) $request->get('id', 0),
+        'author' => $request->get('author', ''),
+        'title' => $request->get('title', ''),
+        'article' => $request->get('article', '')
+    ];
+
+    $managerLookupStmt = $app['pdo']->prepare('SELECT id, username FROM manager WHERE username = ?');
+    $managerLookupStmt->execute([$data['author']]);
+    $manager = $managerLookupStmt->fetch(\PDO::FETCH_ASSOC);
+
+    unset ($data['author']);
+    $data['manager_id'] = $manager['id'];
+
+    $date = new \DateTime('now', new \DateTimeZone('Europe/Brussels'));
+
+    if (0 === $data['id']) {
+        $newData = [
+            'manager_id' => $data['manager_id'],
+            'title' => $data['title'],
+            'article' => $data['article'],
+            'created' => $date->format('Y-m-d H:i:s'),
+            'published' => $date->format('Y-m-d H:i:s'),
+        ];
+        $query = 'INSERT INTO news (manager_id, title, article, created, published) VALUES (?, ?, ?, ?, ?)';
+    } else {
+        $newData = [
+            'manager_id' => $data['manager_id'],
+            'title' => $data['title'],
+            'article' => $data['article'],
+            'published' => $date->format('Y-m-d H:i:s'),
+            'id' => $data['id'],
+        ];
+        $query = 'UPDATE news SET manager_id = ?, title = ?, article = ?, published = ? WHERE id = ?';
+    }
+    $postStmt = $app['pdo']->prepare($query);
+    var_dump($app['pdo']->errorInfo());
+    $postStmt->execute(array_values($newData));
+
+    return $app->redirect('/admin/news');
 });
 
 $app->get('/login', function (Request $request) use ($app) {
