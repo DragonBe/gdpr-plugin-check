@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="Plugin Check" description="Plugin checker for GDPR compliance" default="build">
+
+    <!-- Sets the DSTAMP, TSTAMP and TODAY properties -->
+    <tstamp />
+
+    <property file="build.properties"/>
+
+    <target name="dbdeploy" description="Database migrations">
+        <property name="db.deploy.basedir" value="${project.basedir}/deploy"/>
+        <property name="db.deploy.deltadir" value="${db.deploy.basedir}/deltas"/>
+        <property name="db.deploy.scriptdir" value="${db.deploy.basedir}/scripts"/>
+        <property name="db.deltaset" value="plugin-check"/>
+
+        <mkdir dir="${db.deploy.scriptdir}/${db.deltaset}"/>
+
+        <property name="db.deploy.upfile" value="${db.deploy.scriptdir}/${db.deltaset}/up-${DSTAMP}-${TSTAMP}.sql"/>
+        <property name="db.deploy.downfile" value="${db.deploy.scriptdir}/${db.deltaset}/down-${DSTAMP}-${TSTAMP}.sql"/>
+
+        <dbdeploy
+            url="${db.dsn}"
+            userid="${db.user}"
+            password="${db.password}"
+            deltaset="plugin-check"
+            dir="${db.deploy.deltadir}/${db.deltaset}"
+            appliedBy="Jenkins-CI"
+            outputfile="${db.deploy.upfile}"
+            undooutputfile="${db.deploy.downfile}"/>
+
+        <pdosqlexec
+            url="${db.dsn}"
+            userid="${db.user}"
+            password="${db.password}"
+            src="${db.deploy.upfile}"/>
+
+    </target>
+
+    <target name="build" description="Build all the things">
+        <echo message="Building ${phing.project.name}"/>
+    </target>
+
+
+</project>

@@ -1,1 +1,4 @@
 /vendor/
+*.phar
+/deploy/scripts/
+plugins.db
