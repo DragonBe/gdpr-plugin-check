@@ -43,7 +43,13 @@ $app['server_page'] = $_SERVER['PHP_SELF'];
 
 $app->get('/', function () use ($app) {
 
-    $newsStmt = $app['pdo']->query('SELECT n.title, n.article, n.published, m.username AS author FROM news n JOIN manager m ON n.manager_id = m.id ORDER BY n.published DESC LIMIT 3');
+    $news = [];
+    if (false === ($newsStmt = $app['pdo']->query('SELECT n.title, n.article, n.published, m.username AS author FROM news n JOIN manager m ON n.manager_id = m.id ORDER BY n.published DESC LIMIT 3'))) {
+        return $app['twig']->render('home.twig', [
+            'news' => $news,
+        ]);
+    }
+
     $news = $newsStmt->fetchAll(\PDO::FETCH_ASSOC);
     return $app['twig']->render('home.twig', [
         'news' => $news,
@@ -328,7 +334,19 @@ $app->get('/api', function () use ($app) {
     ]);
 });
 
-$app->get('api/check/{plugin}', function ($plugin) use ($app) {
+$app->get('api/check/{searchTxt}', function ($searchTxt) use ($app) {
+
+    $plugin = trim(urldecode($searchTxt));
+
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_BACKTICK);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_HIGH);
+
+    $plugin = str_replace(['=', '--', ';'], '', $plugin);
+    $plugin = trim($plugin);
+
     $pluginChk = $app['pdo']->prepare(
         'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END), pd.last_checked, pp.price 
            FROM platform_plugin pp 
@@ -348,7 +366,25 @@ $app->get('api/check/{plugin}', function ($plugin) use ($app) {
     return $app->json(['result' => $success, 'count' => $totalResults, 'plugins' => $data]);
 });
 
-$app->get('api/check/{plugin}/{platform}', function ($plugin, $platform) use ($app) {
+$app->get('api/check/{searchTxt}/{searchPlatform}', function ($searchTxt, $searchPlatform) use ($app) {
+
+    $platformList = ['magento', 'prestashop', 'woocommerce'];
+    $platform = trim(urldecode($searchPlatform));
+    if (!in_array(strtolower($platform), $platformList)) {
+        return $app->json(['result' => 'Error looking up the chosen platform', 'count' => 0, 'plugins' => []]);
+    }
+
+    $plugin = trim(urldecode($searchTxt));
+
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_BACKTICK);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_HIGH);
+
+    $plugin = str_replace(['=', '--', ';'], '', $plugin);
+    $plugin = trim($plugin);
+
     $pluginChk = $app['pdo']->prepare(
         'SELECT pa.platform, p.name, pd.website, (CASE WHEN pd.compliant = 1 THEN "true" ELSE "false" END) AS compliant, pd.last_checked, pp.price 
            FROM platform_plugin pp 
