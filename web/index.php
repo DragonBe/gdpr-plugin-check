@@ -40,6 +40,7 @@ $app->extend('twig', function ($twig, $app) {
 $app['debug'] = true;
 $app['pdo'] = $pdo;
 $app['server_page'] = $_SERVER['PHP_SELF'];
+$app['platformList'] = ['magento', 'prestashop', 'woocommerce'];
 
 $app->get('/', function () use ($app) {
 
@@ -86,9 +87,28 @@ $app->get('/plugin', function (Request $request) use ($app) {
 
 $app->post('/plugin/check', function (Request $request) use ($app) {
     $pluginString = $request->get('plugin');
-    preg_match('/^(.*)\s\((\w+)\)$/', $pluginString, $matches);
-    $plugin = $matches[1];
-    $platform = $matches[2];
+
+    $match = preg_match('/^(.*)\s\((\w+)\)$/', $pluginString, $matches);
+
+    if (0 === (int) $match) {
+        return $app['twig']->render('plugin/notfound.twig', ['plugin' => $pluginString]);
+    }
+
+    $plugin = trim($matches[1]);
+    $platform = trim($matches[2]);
+
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_BACKTICK);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_LOW);
+    $plugin = filter_var($plugin, FILTER_SANITIZE_STRING, FILTER_FLAG_ENCODE_HIGH);
+
+    $plugin = str_replace(['=', '--', ';'], '', $plugin);
+    $plugin = trim($plugin);
+
+    if (!in_array(strtolower($platform), $app['platformList'])) {
+        return $app['twig']->render('plugin/notfound.twig', ['plugin' => $plugin]);
+    }
 
     $stmt = $app['pdo']->prepare('SELECT pa.platform, p.name, pd.website, pp.price, pd.compliant, pd.last_checked FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd on pp.plugin_id = pd.plugin_id WHERE (pa.platform = ?) AND (p.name = ?)');
     $stmt->execute([$platform, $plugin]);
@@ -268,7 +288,6 @@ $app->post('/admin/news', function (Request $request) use ($app) {
         $query = 'UPDATE news SET manager_id = ?, title = ?, article = ?, published = ? WHERE id = ?';
     }
     $postStmt = $app['pdo']->prepare($query);
-    var_dump($app['pdo']->errorInfo());
     $postStmt->execute(array_values($newData));
 
     return $app->redirect('/admin/news');
@@ -368,9 +387,8 @@ $app->get('api/check/{searchTxt}', function ($searchTxt) use ($app) {
 
 $app->get('api/check/{searchTxt}/{searchPlatform}', function ($searchTxt, $searchPlatform) use ($app) {
 
-    $platformList = ['magento', 'prestashop', 'woocommerce'];
     $platform = trim(urldecode($searchPlatform));
-    if (!in_array(strtolower($platform), $platformList)) {
+    if (!in_array(strtolower($platform), $app['platformList'])) {
         return $app->json(['result' => 'Error looking up the chosen platform', 'count' => 0, 'plugins' => []]);
     }
 
