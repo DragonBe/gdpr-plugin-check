@@ -7,7 +7,7 @@ require_once __DIR__ . '/magento-slurper.php';
 
 $pdo = new \PDO('sqlite:' . realpath(__DIR__ . '/../plugins.db'));
 $wcs = new WooCommerceSlurper($pdo);
-$wcs->slurp();
+//$wcs->slurp();
 $pss = new PrestaShopSlurper($pdo);
 $pss->slurp();
 /*$ms = new MagentoSlurper($pdo);

@@ -47,12 +47,15 @@ class PrestaShopSlurper
     {
         foreach ($this->categories as $category) {
             $page = 1;
-            //do {
+            do {
                 $url = sprintf('%s/%s', self::BASE_URL, $category);
+                if (1 < $page) {
+                    $url = sprintf('%s/%s?page=%d&', self::BASE_URL, $category, $page);
+                }
                 echo 'Processing page ' . $page . ' for ' . $category . ' on PrestaShop' . PHP_EOL;
                 $result = $this->process($url);
                 $page++;
-//            } while (true === $result);
+            } while (true === $result);
         }
     }
 
@@ -112,11 +115,17 @@ class PrestaShopSlurper
                 $indexes = array_keys($urls);
                 foreach ($indexes as $index) {
                     $entry = [
-                        'url' => $urls[$index],
-                        'name' => $names[$index],
-                        'price' => $prices[$index],
+                        'url' => isset ($urls[$index]) ? $urls[$index] : self::BASE_URL,
+                        'name' => isset ($names[$index]) ? $names[$index] : 'N/A',
+                        'price' => isset ($prices[$index]) ? $price[$index] : '0.0',
                     ];
                     $this->save($entry);
+                }
+            }
+            $para = $listing->getElementsByTagName('p');
+            foreach ($para as $item) {
+                if ('No products found in this category.' === (string) trim($item->nodeValue)) {
+                    return false;
                 }
             }
         }
