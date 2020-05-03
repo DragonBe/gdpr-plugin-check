@@ -110,13 +110,25 @@ $app->post('/plugin/check', function (Request $request) use ($app) {
         return $app['twig']->render('plugin/notfound.twig', ['plugin' => $plugin]);
     }
 
-    $stmt = $app['pdo']->prepare('SELECT pa.platform, p.name, pd.website, pp.price, pd.compliant, pd.last_checked FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd on pp.plugin_id = pd.plugin_id WHERE (pa.platform = ?) AND (p.name = ?)');
+    $stmt = $app['pdo']->prepare('SELECT p.id, pa.platform, p.name, pd.website, pp.price, pd.compliant, pd.last_checked, pd.privacy_policy FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd on pp.plugin_id = pd.plugin_id WHERE (pa.platform = ?) AND (p.name = ?)');
     $stmt->execute([$platform, $plugin]);
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
     if (false === $result) {
         return $app['twig']->render('plugin/notfound.twig', ['plugin' => $plugin]);
     }
-    return $app['twig']->render('plugin/check.twig', ['plugin' => $result]);
+
+    $metaStmt = $app['pdo']->prepare('SELECT pm.label, pm.value FROM plugin_meta pm WHERE pm.plugin_id = ?');
+    $metaStmt->bindValue(1, $result['id'], \PDO::PARAM_INT);
+    $metaStmt->execute();
+
+    $meta = $metaStmt->fetchAll(\PDO::FETCH_ASSOC);
+    $labels = [
+        'date_reviewed' => 'Last verified',
+        'comment' => 'Review notes',
+        'policy_hash' => 'Hash of privacy policy',
+    ];
+
+    return $app['twig']->render('plugin/check.twig', ['plugin' => $result, 'meta' => $meta, 'labels' => $labels]);
 });
 
 $app->get('/admin', function (Request $request) use ($app) {

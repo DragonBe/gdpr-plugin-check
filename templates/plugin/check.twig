@@ -16,7 +16,13 @@
                 <dd class="list-group-item">{% if '' != plugin.website %}<a href="{{ plugin.website }}" target="_blank">view website</a>{% endif %}</dd>
                 <dd class="list-group-item">{{ plugin.price|number_format(2, '.', ',') }}</dd>
                 <dd class="list-group-item">{% if 1 == plugin.compliant %}Compliant{% else %}Not Compliant{% endif %}</dd>
-                <dd class="list-group-item">Last checked: {{ plugin.last_checked|date('d-m-Y') }}</dd>
+                <dd class="list-group-item"><strong>Last plugin check:</strong> <span>{{ plugin.last_checked|date('d-m-Y') }}</span></dd>
+                <dd class="list-group-item"><strong>Privacy policy:</strong> {% if '' != plugin.privacy_policy %}<a href="{{ plugin.privacy_policy }}" target="_blank">{{ plugin.privacy_policy }}</a>{% endif %}</dd>
+                {% if meta %}
+                    {% for entry in meta %}
+                        <dd class="list-group-item"><strong>{{ labels[entry.label] }}: </strong>{{ entry.value }}</dd>
+                    {% endfor %}
+                {% endif %}
             </dl>
 
             <a href="/" class="bnt btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Go back</a>
