@@ -57,35 +57,20 @@ class WooCommerceSlurper
 
     protected function process(string $url): bool
     {
-        $hash = md5($url);
-        if (!file_exists(__DIR__ . '/cache/' . $hash)) {
-            $client = new Client();
-            try {
-                $request = $client->request('GET', $url);
-            } catch (ClientException $clientException) {
-                return false;
-            }
-
-            if (404 === $request->getStatusCode()) {
-                return false;
-            }
-
-            $body = $request->getBody();
-            $page = (string)$body;
-            file_put_contents(__DIR__ . '/cache/' . $hash, $page);
+        try {
+            $domdoc = $this->loadDomDocument($url);
+        } catch (\DomainException $e) {
+            return false;
         }
-        $page = file_get_contents(__DIR__ . '/cache/' . $hash);
-
-        $domdoc = new \DOMDocument();
-        $domdoc->loadHTML($page, LIBXML_NOWARNING | LIBXML_NOERROR);
 
         $listings = $domdoc->getElementsByTagName('li');
         foreach ($listings as $listing) {
-            $entry = ['url' => '', 'name' => '', 'price' => ''];
+            $entry = ['url' => '', 'name' => '', 'price' => '', 'privacy_policy' => ''];
             if ($listing->hasAttribute('class') && 'product' === substr($listing->getAttribute('class'), 0, 7)) {
                 $links = $listing->getElementsByTagName('a');
                 foreach ($links as $link) {
                     $entry['url'] = $link->getAttribute('href');
+                    $entry['privacy_policy'] = $this->retrieveMetaData($entry['url']);
                 }
                 $pluginNames = $listing->getElementsByTagName('h3');
                 foreach ($pluginNames as $pluginName) {
@@ -106,6 +91,40 @@ class WooCommerceSlurper
         return true;
     }
 
+    /**
+     * Loads the DOM of a given URL or throws a Domain
+     * Exception if something goes wrong
+     *
+     * @param string $url
+     * @return \DOMDocument
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    private function loadDomDocument(string $url): \DOMDocument
+    {
+        $hash = md5($url);
+        if (!file_exists(__DIR__ . '/cache/' . $hash)) {
+            $client = new Client();
+            try {
+                $request = $client->request('GET', $url);
+            } catch (ClientException $clientException) {
+                throw new \DomainException('Can not make a successful request: ' . $clientException->getMessage());
+            }
+
+            if (404 === $request->getStatusCode()) {
+                throw new \DomainException('Can not find a result for ' . $url);
+            }
+
+            $body = $request->getBody();
+            $page = (string)$body;
+            file_put_contents(__DIR__ . '/cache/' . $hash, $page);
+        }
+        $page = file_get_contents(__DIR__ . '/cache/' . $hash);
+
+        $domdoc = new \DOMDocument();
+        $domdoc->loadHTML($page, LIBXML_NOWARNING | LIBXML_NOERROR);
+        return $domdoc;
+    }
+
     public function save(array $entry)
     {
         $date = new \DateTime('now', new \DateTimeZone('Europe/Brussels'));
@@ -121,8 +140,8 @@ class WooCommerceSlurper
             $insertPluginStmt->execute([$entry['name']]);
             $pluginId = $this->pdo->lastInsertId();
 
-            $insertPluginDetailsStmt = $this->pdo->prepare('INSERT INTO plugin_details (plugin_id, website, compliant, last_checked) VALUES (?, ?, ?, ?)');
-            $insertPluginDetailsStmt->execute([$pluginId, $entry['url'], 0, $timeStamp]);
+            $insertPluginDetailsStmt = $this->pdo->prepare('INSERT INTO plugin_details (plugin_id, website, compliant, last_checked, privacy_policy) VALUES (?, ?, ?, ?, ?)');
+            $insertPluginDetailsStmt->execute([$pluginId, $entry['url'], 0, $timeStamp, $entry['privacy_policy']]);
 
             $insertPlatformPluginStmt = $this->pdo->prepare('INSERT INTO platform_plugin (platform_id, plugin_id, price) VALUES (?, ?, ?)');
             $insertPlatformPluginStmt->execute([$this->platformId, $pluginId, $entry['price']]);
@@ -132,11 +151,34 @@ class WooCommerceSlurper
             $updatePluginStmt = $this->pdo->prepare('UPDATE plugin SET name = ? WHERE id = ?');
             $updatePluginStmt->execute([$entry['name'], $pluginId]);
 
-            $updatePluginDetailsStmt = $this->pdo->prepare('UPDATE plugin_details SET website = ?, last_checked = ? WHERE plugin_id = ?');
-            $updatePluginDetailsStmt->execute([$entry['url'], $timeStamp, $pluginId]);
+            $updatePluginDetailsStmt = $this->pdo->prepare('UPDATE plugin_details SET website = ?, last_checked = ?, privacy_policy = ? WHERE plugin_id = ?');
+            $updatePluginDetailsStmt->execute([$entry['url'], $timeStamp, $entry['privacy_policy'], $pluginId]);
 
             $updatePlatformPluginStmt = $this->pdo->prepare('UPDATE platform_plugin SET price = ? WHERE (platform_id = ?) AND (plugin_id = ?)');
             $updatePlatformPluginStmt->execute([$entry['price'], $this->platformId, $pluginId]);
         }
+    }
+
+    public function retrieveMetaData($url): string
+    {
+        try {
+            $domdoc = $this->loadDomDocument($url);
+        } catch (\DomainException $e) {
+            echo 'Cannot load meta information: ' . $e->getMessage() . PHP_EOL;
+            return '';
+        }
+        echo 'Retrieving meta data for ' . $url . PHP_EOL;
+        $divs = $domdoc->getElementsByTagName('div');
+        foreach ($divs as $div) {
+            if ($div->hasAttribute('class') && 'get_support_privacy_policy' === (string) $div->getAttribute('class')) {
+                $privacyLinks = $div->getElementsByTagName('a');
+                foreach ($privacyLinks as $privacyLink) {
+                    if ($privacyLink->hasAttribute('href')) {
+                        return $privacyLink->getAttribute('href');
+                    }
+                }
+            }
+        }
+        return '';
     }
 }
