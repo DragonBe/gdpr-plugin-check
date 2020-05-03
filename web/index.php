@@ -206,14 +206,28 @@ $app->get('/admin/edit/{platformId}/{pluginId}', function ($platformId, $pluginI
     $platformStmt = $app['pdo']->query('SELECT id, platform FROM platform ORDER BY platform');
     $platformList = $platformStmt->fetchAll(\PDO::FETCH_ASSOC);
 
-    $dataStmt = $app['pdo']->prepare('SELECT pp.platform_id, pp.plugin_id, pa.platform, p.name, pd.website, pp.price, pd.compliant, pa.search FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id WHERE (pp.platform_id = ?) AND (pp.plugin_id = ?)');
+    $dataStmt = $app['pdo']->prepare('SELECT pp.platform_id, pp.plugin_id, pa.platform, p.name, pd.website, pp.price, pd.compliant, pd.privacy_policy, pa.search FROM platform_plugin pp JOIN platform pa ON pp.platform_id = pa.id JOIN plugin p ON pp.plugin_id = p.id JOIN plugin_details pd ON pp.plugin_id = pd.plugin_id WHERE (pp.platform_id = ?) AND (pp.plugin_id = ?)');
     $dataStmt->execute([$platformId, $pluginId]);
     $data = $dataStmt->fetch(\PDO::FETCH_ASSOC);
+
+    $metaStmt = $app['pdo']->prepare('SELECT label, value FROM plugin_meta WHERE plugin_id = ?');
+    $metaStmt->execute([$pluginId]);
+    $meta = $metaStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+    $comment = '';
+    if ([] !== $meta) {
+        $commentList = array_values(array_filter($meta, function ($combo) {
+            return 'comment' === $combo['label'];
+        }, ARRAY_FILTER_USE_BOTH));
+        $comment = $commentList[0]['value'];
+    }
+
     return $app['twig']->render('admin/edit.twig', [
         'action' => 'edit',
         'platforms' => $platformList,
         'compliance' => [0 => 'No', 1 => 'Yes'],
         'data' => $data,
+        'comment' => $comment,
     ]);
 });
 
@@ -234,15 +248,39 @@ $app->post('/admin/edit', function (Request $request) use ($app) {
     $pluginId = $request->get('plugin');
     $website = $request->get('website');
     $price = $request->get('price');
+    $privacyPolicy = $request->get('privacy_policy');
     $compliant = $request->get('compliant');
+    $comment = $request->get('comment');
     $date = new \DateTime('now', new \DateTimeZone('Europe/Brussels'));
     $timeStamp = $date->format('Y-m-d H:i:s');
 
-    $plugDetailStmt = $app['pdo']->prepare('UPDATE plugin_details SET website = ?, compliant = ?, last_checked = ? WHERE plugin_id = ?');
-    $plugDetailStmt->execute([$website, $compliant, $timeStamp, $pluginId]);
+    $plugDetailStmt = $app['pdo']->prepare('UPDATE plugin_details SET website = ?, privacy_policy = ?, compliant = ?, last_checked = ? WHERE plugin_id = ?');
+    $plugDetailStmt->execute([$website, $privacyPolicy, $compliant, $timeStamp, $pluginId]);
 
     $plugPriceStmt = $app['pdo']->prepare('UPDATE platform_plugin SET price = ? WHERE (platform_id = ?) AND (plugin_id = ?)');
     $plugPriceStmt->execute([$price, $platformId, $pluginId]);
+
+    $hash = md5_file($privacyPolicy);
+    $meta = [
+        'date_reviewed' => $date->format('Y-m-d'),
+        'comment' => $comment,
+        'policy_hash' => $hash,
+    ];
+
+    $metaSelectStmt = $app['pdo']->prepare('SELECT * FROM plugin_meta WHERE plugin_id = ? AND label LIKE ?');
+    $metaInStmt = $app['pdo']->prepare('INSERT INTO plugin_meta (plugin_id, label, value) VALUES (?, ?, ?)');
+    $metaUpStmt = $app['pdo']->prepare('UPDATE plugin_meta SET value = ? WHERE plugin_id = ? AND label LIKE ?');
+
+    foreach ($meta as $label => $value) {
+        $metaSelectStmt->execute([$pluginId, $label]);
+        $row = $metaSelectStmt->fetch(\PDO::FETCH_ASSOC);
+        if (false === $row) {
+            $metaInStmt->execute([$pluginId, $label, $value]);
+        } else {
+            $metaUpStmt->execute([$value, $pluginId, $label]);
+        }
+    }
+
     return $app->redirect('/admin?last_id=' . $pluginId . '#last');
 });
 
