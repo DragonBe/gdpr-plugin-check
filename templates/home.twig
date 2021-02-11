@@ -61,9 +61,8 @@
 
 {% block customJs %}
     <script type="application/javascript">
-        $(document).ready(function () {
-
-           $('#text-plugin').autocomplete({
+        $( function () {
+           $( "#text-plugin" ).autocomplete({
                minLength: 3,
                source: "/plugin"
            });

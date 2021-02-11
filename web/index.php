@@ -16,6 +16,10 @@ if (php_sapi_name() === 'cli-server' && is_file($filename)) {
     return false;
 }
 
+ini_set('xdebug.default_enable', '0');
+ini_set('display_errors', 0);
+error_reporting(E_WARNING|E_ERROR);
+
 $pdo = new \PDO('sqlite:' . realpath(__DIR__ . '/../plugins.db'));
 
 $app = new Application();
